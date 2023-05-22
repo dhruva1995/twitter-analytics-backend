@@ -1,7 +1,10 @@
 package com.analytics.twitter.batch.steps;
 
-import com.analytics.twitter.model.Tweet;
-import com.analytics.twitter.repository.TweetRepository;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+import java.util.Random;
+
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepExecution;
@@ -23,16 +26,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.validation.BindException;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
-import java.util.Random;
+import com.analytics.twitter.model.Tweet;
+import com.analytics.twitter.repository.TweetRepository;
 
 @Service
 public class DataLoader implements StepExecutionListener {
     private static final Random RANDOM = new Random();
 
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss",
+            Locale.getDefault());
     @Autowired
     private PlatformTransactionManager transactionManager;
 
@@ -62,10 +64,10 @@ public class DataLoader implements StepExecutionListener {
                 .processor(item -> item)
                 .writer(writer())
                 .listener(this)
-                //.taskExecutor(taskExecutor)   Don't do this as file is not proper with one line ending.
+                // .taskExecutor(taskExecutor) Don't do this as file is not proper with one line
+                // ending.
                 .build();
     }
-
 
     private ItemWriter<Tweet> writer() {
         return new ItemWriter<Tweet>() {
@@ -81,8 +83,8 @@ public class DataLoader implements StepExecutionListener {
                 .name("Tweet-Item-Reader")
                 .resource(new ClassPathResource(path))
                 .delimited()
-                //date,id,content,username,like_count,retweet_count
-                .names(new String[]{"date", "id", "content", "username", "like_count", "retweet_count"})
+                // date,id,content,username,like_count,retweet_count
+                .names(new String[] { "date", "id", "content", "username", "like_count", "retweet_count" })
                 .strict(false)
                 .recordSeparatorPolicy(new DefaultRecordSeparatorPolicy())
                 .fieldSetMapper(new FieldSetMapper<Tweet>() {
@@ -91,21 +93,24 @@ public class DataLoader implements StepExecutionListener {
                         var date = fieldSet.readString("date");
                         date = date.substring(0, 19);
                         var localDate = LocalDate.parse(date, DATE_TIME_FORMATTER);
-                        //---------Randomizing------------------
+                        // ---------Randomizing------------------
                         int randomMonth = RANDOM.nextInt(12) + 1;
                         int month = localDate.getDayOfMonth() > 28 && randomMonth == 2 ? 3 : randomMonth;
                         localDate = LocalDate.of(localDate.getYear(), month, RANDOM.nextInt(28) + 1);
 
-                        //---------------------------------------
+                        // ---------------------------------------
                         String content = fieldSet.readRawString("content");
+                        int likes = fieldSet.readInt("like_count");
+                        int retweets = fieldSet.readInt("retweet_count");
                         Tweet tweet = Tweet.builder()
                                 .id(fieldSet.readLong("id"))
                                 .date(localDate)
                                 .content(content)
                                 .userName(fieldSet.readString("username"))
-                                .likeCount(fieldSet.readInt("like_count"))
-                                .retweetCount(fieldSet.readInt("retweet_count"))
+                                .likeCount(likes)
+                                .retweetCount(retweets)
                                 .storage(content.length())
+                                .engagementCount(1 + retweets + likes)
                                 .build();
                         return tweet;
                     }
