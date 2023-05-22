@@ -1,12 +1,5 @@
 package com.analytics.twitter.services;
 
-import com.analytics.twitter.batch.JobCompletionNotificationListener;
-import com.analytics.twitter.batch.steps.DataLoader;
-import com.analytics.twitter.batch.steps.MonthStatsCollectorStep;
-import com.analytics.twitter.batch.steps.ReverseMapping;
-import com.analytics.twitter.repository.HashTagStatsRepository;
-import com.analytics.twitter.repository.TweetRepository;
-import com.analytics.twitter.repository.UserStatsRepository;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -23,15 +16,17 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
-import java.util.Random;
+import com.analytics.twitter.batch.JobCompletionNotificationListener;
+import com.analytics.twitter.batch.steps.DataLoader;
+import com.analytics.twitter.batch.steps.MonthStatsCollectorStep;
+import com.analytics.twitter.batch.steps.ReverseMapping;
+import com.analytics.twitter.repository.HashTagStatsRepository;
+import com.analytics.twitter.repository.TweetRepository;
+import com.analytics.twitter.repository.UserStatsRepository;
 
 @Service
 public class WorkflowService {
-    private static final DateTimeFormatter DATE_TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-    private static final Random RANDOM = new Random();
+
     @Autowired
     private JobLauncher jobLauncher;
 
@@ -67,7 +62,7 @@ public class WorkflowService {
             Job job = buildJob(path);
             jobLauncher.run(job, Parameters);
         } catch (JobExecutionAlreadyRunningException | JobRestartException
-                 | JobInstanceAlreadyCompleteException | JobParametersInvalidException e) {
+                | JobInstanceAlreadyCompleteException | JobParametersInvalidException e) {
             e.printStackTrace();
         }
     }
@@ -76,7 +71,7 @@ public class WorkflowService {
         var jobBuilder = new JobBuilder("Persist data", jobRepository)
                 .incrementer(new RunIdIncrementer())
                 .listener(listener)
-                .start(dataLoader.getStep(path));               //step 1
+                .start(dataLoader.getStep(path)); // step 1
         for (int month = 1; month <= 12; month++) {
             var reverseMapper = new ReverseMapping(jobRepository, tweetRepository, transactionManager,
                     userStatsRepository, hashTagStatsRepository, exec, month);
