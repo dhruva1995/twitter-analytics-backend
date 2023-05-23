@@ -42,7 +42,6 @@ public class TweetsHashTagsHandler {
         pageData.setMostLiked(tweetRepo.mostLikedInAMonth(month));
         pageData.setMostRetweeted(tweetRepo.mostRetweetedInAMonth(month));
         pageData.setMostEngaged(tweetRepo.mostEngagedInAMonth(month));
-        System.out.println(pageData);
 
         mongoTemplate.remove(new Query(Criteria.where("month").is(month)), TweetsHashTagStats.class);
 

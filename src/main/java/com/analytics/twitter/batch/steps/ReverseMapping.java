@@ -167,7 +167,7 @@ public class ReverseMapping implements StepExecutionListener {
     }
 
     public ReverseMappingState process(Tweet tweet) {
-        System.out.println("Processing!");
+
         Map<String, HashTagStats> hashTagStas = new HashMap<>();
         Map<String, UserStats> userStats = new HashMap<>();
 

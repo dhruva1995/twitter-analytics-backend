@@ -56,7 +56,6 @@ public class HomeScreenDataHandler {
             storageUsagePerDay.computeIfAbsent(date, d -> 0l);
         }
 
-        System.out.println(data);
         data.setActiveUsersPerDay(activeUsesPerDay);
         data.setTweetsPerDay(tweetsPerDay);
         data.setStorageUsagePerDay(storageUsagePerDay);

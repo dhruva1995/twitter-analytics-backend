@@ -49,7 +49,7 @@ public class HomeMonthStats {
         if (row.isEmpty()) {
             return new HomeMonthStats();
         }
-        System.out.println(row.get(0));
+
         HomeMonthStats data = new HomeMonthStats();
         data.month = getAs(row.get(0).get(0), Integer.class, 0);
         data.tweetCount = getAs(row.get(0).get(1), Long.class, 0l);
