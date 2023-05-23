@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.analytics.twitter.model.HomeMonthStats;
 import com.analytics.twitter.model.TweetsHashTagStats;
+import com.analytics.twitter.model.UsersMonthStats;
 import com.analytics.twitter.services.APIDataService;
 
 @RestController
@@ -32,6 +33,12 @@ public class APIDataController {
     public ResponseEntity<TweetsHashTagStats> getTrendingHashTagsAndPostsForMonth(
             @PathVariable("month") final int month) {
         return new ResponseEntity<>(service.getTrendingPageData(month), HttpStatus.OK);
+    }
+
+    @GetMapping("/users/{month}")
+    public ResponseEntity<UsersMonthStats> getTrendingUsersForMonth(
+            @PathVariable("month") final int month) {
+        return new ResponseEntity<>(service.getTrendingUsersData(month), HttpStatus.OK);
     }
 
 }

@@ -10,6 +10,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import com.analytics.twitter.batch.steps.handlers.HomeScreenDataHandler;
 import com.analytics.twitter.batch.steps.handlers.TweetsHashTagsHandler;
+import com.analytics.twitter.batch.steps.handlers.UserStatsHandler;
 
 @Service
 public class MonthStatsCollectorStep {
@@ -24,6 +25,9 @@ public class MonthStatsCollectorStep {
     @Autowired
     private TweetsHashTagsHandler tweetHashTagHandler;
 
+    @Autowired
+    private UserStatsHandler userStatsHandler;
+
     public Step createStep(int month) {
         return new StepBuilder("Monthly statistics for " + month, jobRepository)
                 .tasklet((cc, cv) -> compute(month), transactionManager)
@@ -33,6 +37,7 @@ public class MonthStatsCollectorStep {
     private RepeatStatus compute(int month) {
         homeScreenDataHandler.handle(month);
         tweetHashTagHandler.handle(month);
+        userStatsHandler.handle(month);
         return RepeatStatus.FINISHED;
     }
 
