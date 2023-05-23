@@ -16,6 +16,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 @Configuration
 public class GenericConfigs {
 
+    ;
+
     @Bean
     public ThreadPoolTaskExecutor taskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -38,7 +40,8 @@ public class GenericConfigs {
     @Bean
     CommandLineRunner runner(WorkflowService service) {
         return args -> {
-            service.startWorkflow("input.csv");
+            service.startWorkflow(null);
+
         };
     }
 

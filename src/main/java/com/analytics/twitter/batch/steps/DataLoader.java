@@ -22,6 +22,8 @@ import org.springframework.batch.item.file.transform.FieldSet;
 import org.springframework.batch.item.file.transform.IncorrectTokenCountException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.validation.BindException;
@@ -79,9 +81,17 @@ public class DataLoader implements StepExecutionListener {
     }
 
     private FlatFileItemReader<Tweet> reader(final String path) {
+
+        Resource resource;
+        if (path == null) {
+            resource = new ClassPathResource("input.csv");
+        } else {
+            System.out.print("Reading from file " + path);
+            resource = new FileSystemResource(path);
+        }
         return new FlatFileItemReaderBuilder<Tweet>()
                 .name("Tweet-Item-Reader")
-                .resource(new ClassPathResource(path))
+                .resource(resource)
                 .delimited()
                 // date,id,content,username,like_count,retweet_count
                 .names(new String[] { "date", "id", "content", "username", "like_count", "retweet_count" })
