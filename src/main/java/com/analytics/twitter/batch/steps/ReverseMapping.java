@@ -1,14 +1,21 @@
 package com.analytics.twitter.batch.steps;
 
-import com.analytics.twitter.model.HashTagStats;
-import com.analytics.twitter.model.Tweet;
-import com.analytics.twitter.model.UserStats;
-import com.analytics.twitter.repository.HashTagStatsRepository;
-import com.analytics.twitter.repository.TweetRepository;
-import com.analytics.twitter.repository.UserStatsRepository;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.*;
+import org.springframework.batch.core.BatchStatus;
+import org.springframework.batch.core.ExitStatus;
+import org.springframework.batch.core.Step;
+import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.step.tasklet.TaskletStep;
@@ -18,9 +25,12 @@ import org.springframework.batch.item.data.RepositoryItemReader;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.analytics.twitter.model.HashTagStats;
+import com.analytics.twitter.model.Tweet;
+import com.analytics.twitter.model.UserStats;
+import com.analytics.twitter.repository.HashTagStatsRepository;
+import com.analytics.twitter.repository.TweetRepository;
+import com.analytics.twitter.repository.UserStatsRepository;
 
 public class ReverseMapping implements StepExecutionListener {
     private static final Logger log = LoggerFactory.getLogger(ReverseMapping.class);
@@ -31,7 +41,6 @@ public class ReverseMapping implements StepExecutionListener {
     private final PlatformTransactionManager transactionManager;
 
     private final int month;
-
 
     private ReverseMappingState result = new ReverseMappingState();
 
@@ -49,7 +58,6 @@ public class ReverseMapping implements StepExecutionListener {
             this.hashTagStas = hashTagStas;
         }
 
-
     }
 
     private final UserStatsRepository userStatsRepository;
@@ -59,9 +67,10 @@ public class ReverseMapping implements StepExecutionListener {
     private final ThreadPoolTaskExecutor exec;
 
     public ReverseMapping(JobRepository jobRepository, TweetRepository tweetRepository,
-                          PlatformTransactionManager transactionManager,
-                          UserStatsRepository userStatsRepository, HashTagStatsRepository hashTagStatsRepository, ThreadPoolTaskExecutor exec,
-                          int month) {
+            PlatformTransactionManager transactionManager,
+            UserStatsRepository userStatsRepository, HashTagStatsRepository hashTagStatsRepository,
+            ThreadPoolTaskExecutor exec,
+            int month) {
         this.jobRepository = jobRepository;
         this.tweetRepository = tweetRepository;
         this.transactionManager = transactionManager;
@@ -83,12 +92,6 @@ public class ReverseMapping implements StepExecutionListener {
                 .writer(data -> this.write(data))
                 .build();
         return step;
-    }
-
-    private ThreadPoolTaskExecutor getTaslExecutor() {
-        var exec = new ThreadPoolTaskExecutor();
-        exec.setCorePoolSize(10);
-        return exec;
     }
 
     @Override
@@ -113,18 +116,16 @@ public class ReverseMapping implements StepExecutionListener {
                 .parallel()
                 .map(obj -> (Object) obj)
                 .map(obj -> (ReverseMappingState) obj)
-                .reduce(this.result, (ReverseMappingState old, ReverseMappingState newState) -> this.merge(old, newState));
+                .reduce(this.result,
+                        (ReverseMappingState old, ReverseMappingState newState) -> this.merge(old, newState));
     }
 
     private ReverseMappingState merge(ReverseMappingState state1, ReverseMappingState state2) {
         return new ReverseMappingState(
                 mergeUserStats(state1.userStats, state2.userStats),
-                mergeHashTagStats(state1.hashTagStas, state2.hashTagStas)
-        );
-
+                mergeHashTagStats(state1.hashTagStas, state2.hashTagStas));
 
     }
-
 
     private Map<String, UserStats> mergeUserStats(Map<String, UserStats> map1, Map<String, UserStats> map2) {
         Map<String, UserStats> result = new HashMap<>();
@@ -142,7 +143,7 @@ public class ReverseMapping implements StepExecutionListener {
     }
 
     private Map<String, HashTagStats> mergeHashTagStats(Map<String, HashTagStats> map1,
-                                                        Map<String, HashTagStats> map2) {
+            Map<String, HashTagStats> map2) {
         Map<String, HashTagStats> result = new HashMap<>();
         for (var entry : map1.entrySet()) {
             String key = entry.getKey();
@@ -165,12 +166,10 @@ public class ReverseMapping implements StepExecutionListener {
         return UserStats.merge(st1, st2);
     }
 
-
     public ReverseMappingState process(Tweet tweet) {
         System.out.println("Processing!");
         Map<String, HashTagStats> hashTagStas = new HashMap<>();
         Map<String, UserStats> userStats = new HashMap<>();
-
 
         int engagment = tweet.getLikeCount() + tweet.getRetweetCount();
         for (String hashTag : extractHashtags(tweet.getContent())) {
@@ -179,7 +178,8 @@ public class ReverseMapping implements StepExecutionListener {
         }
 
         for (var mentionedUser : extractTaggedUsers(tweet.getContent())) {
-            userStats.computeIfAbsent(mentionedUser, un -> UserStats.with(mentionedUser, month)).increaseMentionedCount(1);
+            userStats.computeIfAbsent(mentionedUser, un -> UserStats.with(mentionedUser, month))
+                    .increaseMentionedCount(1);
         }
         var userStat = userStats.computeIfAbsent(tweet.getUserName(), userName -> UserStats.with(userName, month));
         userStat.increaseTweetCount(1);
@@ -189,7 +189,6 @@ public class ReverseMapping implements StepExecutionListener {
         userStat.increaseEngagementCount(engagment);
         return new ReverseMappingState(userStats, hashTagStas);
     }
-
 
     public static Set<String> extractHashtags(String tweetContent) {
         Set<String> hashtags = new HashSet<>();
@@ -214,7 +213,6 @@ public class ReverseMapping implements StepExecutionListener {
         return taggedUsers;
     }
 
-
     private ItemReader<? extends Tweet> getReader() {
         RepositoryItemReader<Tweet> reader = new RepositoryItemReader<>();
         reader.setRepository(tweetRepository);
@@ -223,6 +221,5 @@ public class ReverseMapping implements StepExecutionListener {
         reader.setSort(new HashMap<>());
         return reader;
     }
-
 
 }

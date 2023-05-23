@@ -20,7 +20,7 @@ public class TweetsHashTagStats {
     private int month;
 
     @Field
-    List<String> trendingHashTags;
+    List<HashTagScorePair> trendingHashTags;
 
     @Field
     List<Tweet> mostLiked;
